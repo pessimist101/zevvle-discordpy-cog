@@ -34,7 +34,10 @@ class Zevvle(commands.Cog):
                 data = await data.json()
                 await session.close()
         pricingEmbed = await self.make_pricing_embed(data)
-        await ctx.send(embed=pricingEmbed)
+        try:
+            await ctx.send(embed=pricingEmbed)
+        except Exception as err:
+            await ctx.send(embed=discord.Embed(description=err))
 
     async def make_pricing_embed(self, data):
         sC = re.compile("Pricing within .*") # Single country
@@ -51,18 +54,23 @@ class Zevvle(commands.Cog):
             embed = discord.Embed(colour=self.zevvleRed,description=data['description'])
             embed.set_author(name="Zevvle Pricing", icon_url=self.zevvleLogo)
             for i in ['voice','sms','mms']:
-                embed.add_field(name=i.capitalize(),value=data[i],inline=True)
+                embed.add_field(name=i.capitalize(),value=f"£{data[i]/100}",inline=True)
             return embed
         if sC.match(data['description']):
             embed = discord.Embed(colour=self.zevvleRed,description=data['description'])
             embed.set_author(name="Zevvle Pricing", icon_url=self.zevvleLogo)
-            for i in ['megabyte', 'gigabyte', 'sms', 'mms', 'voice', 'voicemail', 'incoming']:
-                embed.add_field(name=i.capitalize(),value=f"£{data[i]/100}",inline=True)
-            embed.add_field(name="Data Tiers",value="",inline=False)
-            for i in data['data_tiers']:
-                n = [i for i in data['data_tiers'][x]]
-                l = [data['data_tiers'][x][i] for i in data['data_tiers'][x]]
-                embed.add_field(name=i,value=f"```{n[0].capitalize()}: £{l[0]}\n{n[1].capitalize()}: £{l[1]}```",inline=True)
+            for i in data:
+                if type(data[i]) is dict:
+                    embed.add_field(name="Data Tiers",value="​",inline=False)
+                    for x in data[i]:
+                        val = []
+                        for y in data[i][x]:
+                            val.append(y)
+                            val.append(data[i][x][y])
+                            l = [data[i][x][y] for y in data[i][x]]
+                        embed.add_field(name=x,value=f"```{val[0]}: £{val[1]/100}\n{val[2]}: £{val[3]/100}```",inline=True)
+                if type(data[i]) is int:
+                    embed.add_field(name=i.capitalize(),value=f"£{data[i]/100}",inline=True)
             return embed
 
 def setup(client):
